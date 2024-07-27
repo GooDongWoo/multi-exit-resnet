@@ -1,6 +1,8 @@
 #!/usr/bin/bash
 
 #SBATCH -J multi_exit_resnet
+#SBATCH -J multi_exit_resnet
+#SBATCH -J hierFL
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-gpu=8
 #SBATCH --mem-per-gpu=28G
