@@ -10,6 +10,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+<<<<<<< HEAD
+=======
+from torchsummary import summary
+>>>>>>> 2e63113b9161ebf69c7a6465ea62bc98918f052c
 from torch import optim
 from torch.optim.lr_scheduler import StepLR
 
