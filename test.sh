@@ -12,3 +12,4 @@ which python
 hostname
 python sourcecode/main.py
 exit 0
+
