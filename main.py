@@ -35,7 +35,7 @@ params_train = {
 createFolder('./models')
 
 # train and validate the model
-torch.autograd.set_detect_anomaly(True)
+#torch.autograd.set_detect_anomaly(True) #check NaN or infinite values appearing in the model
 model, loss_hist, metric_hist = train_val(model, params_train)
 
 #plot loss and accuracy

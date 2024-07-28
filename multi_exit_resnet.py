@@ -1,95 +1,23 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # 1. Dataset Preprocessing
-# 데이터셋은 torchvision 패키지에서 제공하는 STL10 dataset을 이용하겠습니다.
-# STL10 dataset은 10개의 label을 갖습니다.
 # import package
-
 # model
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch import optim
-from torch.optim.lr_scheduler import StepLR
-
-# dataset and transformation
-from torchvision import datasets
-from torchvision import models
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
 import os
+# dataset and transformation
+from torchvision import models
 
-# display images
-from torchvision import utils
-import matplotlib.pyplot as plt
-
-# utils
-import numpy as np
-from torchinfo import summary
-import time
-from tqdm import tqdm
-
-
-# specify the data path
-path2data = './data'
-
-# if not exists the path, make the directory
-if not os.path.exists(path2data):
-    os.mkdir(path2data)
-
-# load dataset
-train_ds = datasets.CIFAR100(path2data, train=True, download=True, transform=transforms.ToTensor())
-val_ds = datasets.CIFAR100(path2data, train=False, download=True, transform=transforms.ToTensor())
-
-# To normalize the dataset, calculate the mean and std
-train_meanRGB = [np.mean(x.numpy(), axis=(1,2)) for x, _ in train_ds]
-train_stdRGB = [np.std(x.numpy(), axis=(1,2)) for x, _ in train_ds]
-
-train_meanR = np.mean([m[0] for m in train_meanRGB])
-train_meanG = np.mean([m[1] for m in train_meanRGB])
-train_meanB = np.mean([m[2] for m in train_meanRGB])
-train_stdR = np.mean([s[0] for s in train_stdRGB])
-train_stdG = np.mean([s[1] for s in train_stdRGB])
-train_stdB = np.mean([s[2] for s in train_stdRGB])
-
-val_meanRGB = [np.mean(x.numpy(), axis=(1,2)) for x, _ in val_ds]
-val_stdRGB = [np.std(x.numpy(), axis=(1,2)) for x, _ in val_ds]
-
-val_meanR = np.mean([m[0] for m in val_meanRGB])
-val_meanG = np.mean([m[1] for m in val_meanRGB])
-val_meanB = np.mean([m[2] for m in val_meanRGB])
-
-val_stdR = np.mean([s[0] for s in val_stdRGB])
-val_stdG = np.mean([s[1] for s in val_stdRGB])
-val_stdB = np.mean([s[2] for s in val_stdRGB])
-
-# define the image transformation
-train_transformation = transforms.Compose([
-                        transforms.ToTensor(),
-                        transforms.Resize(224),
-                        transforms.Normalize([train_meanR, train_meanG, train_meanB],[train_stdR, train_stdG, train_stdB]),
-                        transforms.RandomHorizontalFlip(),
-])
-
-val_transformation = transforms.Compose([
-                        transforms.ToTensor(),
-                        transforms.Resize(224),
-                        transforms.Normalize([train_meanR, train_meanG, train_meanB],[train_stdR, train_stdG, train_stdB]),
-])
-
-# apply transforamtion
-train_ds.transform = train_transformation
-val_ds.transform = val_transformation
-
-# create DataLoader
-train_dl = DataLoader(train_ds, batch_size=32, shuffle=True)
-val_dl = DataLoader(val_ds, batch_size=32, shuffle=True)
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        print('Error')
 
 # # 2. Model Configuration
 def get_output_shape(module, img_dim):
     # returns output shape
-    device = next(module.parameters()).device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    module.to(device)
     dims = module(torch.rand(*(img_dim)).to(device)).data.shape
     return dims
 
@@ -123,7 +51,6 @@ class BasicBlock(nn.Module):
         x = self.relu(x)
         return x
 
-
 class BottleNeck(BasicBlock):
     expansion = 4
     def __init__(self, in_channels, out_channels, stride=1):
@@ -139,7 +66,6 @@ class BottleNeck(BasicBlock):
             nn.Conv2d(out_channels, out_channels * self.expansion, kernel_size=1, stride=1, bias=False),
             nn.BatchNorm2d(out_channels * self.expansion),
         )
-
 
 class IntrClassif(nn.Module):
     # intermediate classifer head to be attached along the backbone
@@ -210,7 +136,6 @@ class MultiExitResNet(nn.Module):
         self.fast_inference_mode = False
         self.exit_loss_weights = [1/self.exit_num for _ in range(self.exit_num)] #for training need to match total exits_num
         self.exit_threshold = torch.tensor([0.8], dtype=torch.float32) #for fast inference  #TODO: inference variable(not constant 0.8) need to make parameter
-        
         self.init_conv = nn.Sequential(self.ptdmodel.conv1, self.ptdmodel.bn1, self.ptdmodel.relu, self.ptdmodel.maxpool)
         self.backbone=nn.ModuleList()
         for layer in [self.ptdmodel.layer1,self.ptdmodel.layer2,self.ptdmodel.layer3,self.ptdmodel.layer4]:
@@ -222,6 +147,7 @@ class MultiExitResNet(nn.Module):
     def _build_exits(self): #adding early exits/branches
         # TODO generalise exit placement for multi exit
         # early exit 1
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         previous_shape=[] #len->5
         tmp = self.init_conv(torch.rand(*(self.input_shape)).to(device))
         eidx=0
@@ -290,161 +216,6 @@ class MultiExitResNet(nn.Module):
             self.eval()
         self.fast_inference_mode = mode
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights.DEFAULT).to(device)).to(device)
-
-#summary(m1, (1,3, 224, 224), device=device.type)
-
-# # 3. Training part
-
-loss_func = nn.CrossEntropyLoss(reduction='mean')
-opt = optim.SGD(model.parameters(), lr=0.1, momentum=0.9,weight_decay=0.0001)
-
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.1, patience=10)
-
-# function to get current lr
-def get_lr(opt):
-    for param_group in opt.param_groups:
-        return param_group['lr']
-
-# function to calculate metric per mini-batch
-def metric_batch(output, target):
-    pred = output.argmax(1, keepdim=True)
-    corrects = pred.eq(target.view_as(pred)).sum().item()
-    return corrects
-
-# function to calculate loss per mini-batch
-def loss_batch(loss_func, output_list, target, opt=None):
-    losses = [loss_func(output,target) for output in output_list]
-    metric_bs = [metric_batch(output, target) for output in output_list]
-    if opt is not None:
-        opt.zero_grad()
-        #backprop
-        for loss in losses[:-1]:
-            #ee losses need to keep graph
-            loss.backward(retain_graph=True)
-        #final loss, graph not required
-        losses[-1].backward()
-        opt.step()
-    return losses, metric_bs
-
-# function to calculate loss and metric per epoch
-def loss_epoch(model, loss_func, dataset_dl, opt=None):
-    running_loss = 0.0
-    running_metric = [0.0] * model.exit_num
-    len_data = len(dataset_dl.dataset)
-    tqdm_state = f'batch_training' if(opt is not None) else f'batch_validation'
-    for xb, yb in tqdm(dataset_dl, desc=tqdm_state, leave=False):
-        xb = xb.to(device)
-        yb = yb.to(device)
-        output_list = model(xb)
-
-        losses, metric_bs = loss_batch(loss_func, output_list, yb, opt)
-        for i, _ in enumerate(losses):
-            running_loss += losses[i].item()
-        running_metric = [sum(i) for i in zip(running_metric,metric_bs)]
-
-
-    loss = running_loss / len_data # float
-    metric = [100*i/len_data for i in running_metric] # float list[exit_num]
-
-    return loss, metric
-
-
-# function to start training
-def train_val(model, params):
-    num_epochs=params['num_epochs']
-    loss_func=params["loss_func"]
-    opt=params["optimizer"]
-    train_dl=params["train_dl"]
-    val_dl=params["val_dl"]
-    lr_scheduler=params["lr_scheduler"]
-    path2weights=params["path2weights"]
-
-    loss_history = {'train': [], 'val': []}
-    metric_history = {'train': [], 'val': []}
-
-    # # GPU out of memoty error
-    # best_model_wts = copy.deepcopy(model.state_dict())
-
-    best_loss = float('inf')
-
-    start_time = time.time()
-
-    for epoch in range(num_epochs):
-        current_lr = get_lr(opt)
-        print('Epoch {}/{}, current lr={}'.format(epoch, num_epochs-1, current_lr))
-
-        model.train()
-        train_loss, train_metric = loss_epoch(model, loss_func, train_dl, opt)
-        loss_history['train'].append(train_loss)
-        metric_history['train'].append(train_metric)
-
-        model.eval()
-        with torch.no_grad():
-            val_loss, val_metric = loss_epoch(model, loss_func, val_dl)
-        loss_history['val'].append(val_loss)
-        metric_history['val'].append(val_metric)
-
-        if val_loss < best_loss:
-            best_loss = val_loss
-            #best_model_wts = copy.deepcopy(model.state_dict())
-            torch.save(model.state_dict(), path2weights)
-            print('saved best model weights!')
-            print('Get best val_loss')
-
-        lr_scheduler.step(val_loss)
-
-        print(f'train loss: {train_loss:.6f}, val loss: {val_loss:.6f}, accuracy: {val_metric}, time: {(time.time()-start_time)/60:.4f} min')
-        print('-'*10)
-
-    #model.load_state_dict(best_model_wts)
-
-    return model, loss_history, metric_history
-
-# definc the training parameters
-params_train = {
-    'num_epochs':50,
-    'optimizer':opt,
-    'loss_func':loss_func,
-    'train_dl':train_dl,
-    'val_dl':val_dl,
-    'sanity_check':False,
-    'lr_scheduler':lr_scheduler,
-    'path2weights':'./models/weights.pt',
-}
-
-# create the directory that stores weights.pt
-def createFolder(directory):
-    try:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    except OSError:
-        print('Error')
-createFolder('./models')
-
-torch.autograd.set_detect_anomaly(True)
-model, loss_hist, metric_hist = train_val(model, params_train)
-
-# Train-Validation Progress
-num_epochs=params_train["num_epochs"]
-'''
-# plot loss progress
-plt.title("Train-Val Loss")
-plt.plot(range(1,num_epochs+1),loss_hist["train"],label="train")
-plt.plot(range(1,num_epochs+1),loss_hist["val"],label="val")
-plt.ylabel("Loss")
-plt.xlabel("Training Epochs")
-plt.legend()
-plt.show()
-
-# plot accuracy progress
-plt.title("Train-Val Accuracy")
-plt.plot(range(1,num_epochs+1),metric_hist["train"],label="train")
-plt.plot(range(1,num_epochs+1),metric_hist["val"],label="val")
-plt.ylabel("Accuracy")
-plt.xlabel("Training Epochs")
-plt.legend()
-plt.show()
-'''
+if(__name__=='__main__'):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights.DEFAULT).to(device)).to(device)

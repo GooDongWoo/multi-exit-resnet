@@ -1,9 +1,5 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # # 1. Dataset Preprocessing
 # import package
-
 # dataset and transformation
 from torchvision import datasets
 import torchvision.transforms as transforms

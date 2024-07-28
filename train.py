@@ -1,15 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # import package
-
 # model
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch import optim
-from torch.optim.lr_scheduler import StepLR
-
 
 # utils
 import time
@@ -63,7 +54,6 @@ def loss_epoch(model, loss_func, dataset_dl, opt=None):
     metric = [100*i/len_data for i in running_metric] # float list[exit_num]
 
     return loss, metric
-
 
 # function to start training
 def train_val(model, params):
