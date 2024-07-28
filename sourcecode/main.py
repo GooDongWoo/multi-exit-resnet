@@ -24,12 +24,10 @@ opt = optim.SGD(model.parameters(), lr=0.1, momentum=0.9,weight_decay=0.0001)
 lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.1, patience=10)
 
 # define the training parameters
-params_train = {
-    'num_epochs':50,'optimizer':opt,'loss_func':loss_func,
+params_train = {'num_epochs':50,'optimizer':opt,'loss_func':loss_func,
     'train_dl':dl.train_dl,'val_dl':dl.val_dl,
     'sanity_check':False,'lr_scheduler':lr_scheduler,
-    'path2weights':'./models/weights.pt'
-}
+    'path2weights':'./models/weights.pt'}
 
 # create the directory that stores weights.pt
 createFolder('./models')

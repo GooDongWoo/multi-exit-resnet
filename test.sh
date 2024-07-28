@@ -10,5 +10,5 @@
 
 which python
 hostname
-python multi_exit_resnet.py
+python sourcecode/main.py
 exit 0
