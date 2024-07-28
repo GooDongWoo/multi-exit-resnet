@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # 1. Dataset Preprocessing
-# 데이터셋은 torchvision 패키지에서 제공하는 STL10 dataset을 이용하겠습니다.
-# STL10 dataset은 10개의 label을 갖습니다.
 # import package
 
 # model
@@ -13,31 +10,12 @@ import torch.nn.functional as F
 from torch import optim
 from torch.optim.lr_scheduler import StepLR
 
-# dataset and transformation
-from torchvision import datasets
-from torchvision import models
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
-import os
-
-# display images
-from torchvision import utils
-import matplotlib.pyplot as plt
 
 # utils
-import numpy as np
-from torchinfo import summary
 import time
 from tqdm import tqdm
 
 # # 3. Training part
-
-loss_func = nn.CrossEntropyLoss(reduction='mean')
-opt = optim.SGD(model.parameters(), lr=0.1, momentum=0.9,weight_decay=0.0001)
-
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.1, patience=10)
-
 # function to get current lr
 def get_lr(opt):
     for param_group in opt.param_groups:
@@ -66,6 +44,7 @@ def loss_batch(loss_func, output_list, target, opt=None):
 
 # function to calculate loss and metric per epoch
 def loss_epoch(model, loss_func, dataset_dl, opt=None):
+    device = next(model.parameters()).device
     running_loss = 0.0
     running_metric = [0.0] * model.exit_num
     len_data = len(dataset_dl.dataset)
@@ -79,7 +58,6 @@ def loss_epoch(model, loss_func, dataset_dl, opt=None):
         for i, _ in enumerate(losses):
             running_loss += losses[i].item()
         running_metric = [sum(i) for i in zip(running_metric,metric_bs)]
-
 
     loss = running_loss / len_data # float
     metric = [100*i/len_data for i in running_metric] # float list[exit_num]

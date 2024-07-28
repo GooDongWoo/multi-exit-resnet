@@ -1,34 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # 1. Dataset Preprocessing
-# 데이터셋은 torchvision 패키지에서 제공하는 STL10 dataset을 이용하겠습니다.
-# STL10 dataset은 10개의 label을 갖습니다.
 # import package
 
 # model
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch import optim
-from torch.optim.lr_scheduler import StepLR
-
-# dataset and transformation
-from torchvision import datasets
-from torchvision import models
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
 import os
+# dataset and transformation
+from torchvision import models
 
-# display images
-from torchvision import utils
-import matplotlib.pyplot as plt
-
-# utils
-import numpy as np
-from torchinfo import summary
-import time
-from tqdm import tqdm
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        print('Error')
 
 # # 2. Model Configuration
 def get_output_shape(module, img_dim):
@@ -67,7 +54,6 @@ class BasicBlock(nn.Module):
         x = self.relu(x)
         return x
 
-
 class BottleNeck(BasicBlock):
     expansion = 4
     def __init__(self, in_channels, out_channels, stride=1):
@@ -83,7 +69,6 @@ class BottleNeck(BasicBlock):
             nn.Conv2d(out_channels, out_channels * self.expansion, kernel_size=1, stride=1, bias=False),
             nn.BatchNorm2d(out_channels * self.expansion),
         )
-
 
 class IntrClassif(nn.Module):
     # intermediate classifer head to be attached along the backbone
@@ -154,7 +139,6 @@ class MultiExitResNet(nn.Module):
         self.fast_inference_mode = False
         self.exit_loss_weights = [1/self.exit_num for _ in range(self.exit_num)] #for training need to match total exits_num
         self.exit_threshold = torch.tensor([0.8], dtype=torch.float32) #for fast inference  #TODO: inference variable(not constant 0.8) need to make parameter
-        
         self.init_conv = nn.Sequential(self.ptdmodel.conv1, self.ptdmodel.bn1, self.ptdmodel.relu, self.ptdmodel.maxpool)
         self.backbone=nn.ModuleList()
         for layer in [self.ptdmodel.layer1,self.ptdmodel.layer2,self.ptdmodel.layer3,self.ptdmodel.layer4]:
@@ -234,5 +218,6 @@ class MultiExitResNet(nn.Module):
             self.eval()
         self.fast_inference_mode = mode
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights.DEFAULT).to(device)).to(device)
+if(__name__=='__main__'):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights.DEFAULT).to(device)).to(device)
