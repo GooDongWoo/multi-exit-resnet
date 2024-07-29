@@ -39,7 +39,7 @@ def loss_batch(loss_func, output_list, label, opt=None):
     return losses, acc_s
 
 # function to calculate loss and metric per epoch
-def loss_epoch(model, loss_func, dataset_dl, writer, opt=None):
+def loss_epoch(model, loss_func, dataset_dl, writer, epoch, opt=None):
     device = next(model.parameters()).device
     running_loss = [0.0] * model.exit_num
     running_metric = [0.0] * model.exit_num
@@ -62,10 +62,11 @@ def loss_epoch(model, loss_func, dataset_dl, writer, opt=None):
     tmp_loss_dict = dict();tmp_acc_dict = dict()
     for idx in range(model.exit_num):
         tmp_loss_dict[f'exit{idx}'] = running_loss[idx];tmp_acc_dict[f'exit{idx}'] = running_acc[idx]
-    writer.add_scalars(f'{TorV}/loss_', tmp_loss_dict)
-    writer.add_scalars(f'{TorV}/accuracy_', tmp_acc_dict)
+    writer.add_scalars(f'{TorV}/loss', tmp_loss_dict, epoch)
+    writer.add_scalars(f'{TorV}/acc', tmp_acc_dict, epoch)
     
     losses_sum = sum(running_loss) # float
+    writer.add_scalar(f'{TorV}/loss_total_sum', losses_sum, epoch)
     accs = running_acc # float list[exit_num]
 
     return losses_sum, accs
@@ -92,11 +93,11 @@ def train_val(model, params):   #TODO 모델 불러오기
         print('Epoch {}/{}, current lr={}'.format(epoch, num_epochs-1, current_lr))
 
         model.train()
-        train_loss, train_accs = loss_epoch(model, loss_func, train_dl, writer, opt)
+        train_loss, train_accs = loss_epoch(model, loss_func, train_dl, writer, epoch, opt)
 
         model.eval()
         with torch.no_grad():
-            val_loss, val_accs = loss_epoch(model, loss_func, val_dl, writer, opt=None)
+            val_loss, val_accs = loss_epoch(model, loss_func, val_dl, writer, epoch, opt=None)
 
         if val_loss < best_loss:
             best_loss = val_loss
@@ -109,7 +110,8 @@ def train_val(model, params):   #TODO 모델 불러오기
 
         total_time=(time.time()-start_time)/60
         hours, minutes = divmod(total_time, 60)
-        print(f'train_loss: {train_loss:.6f}, train_acc: {train_accs}, val_loss: {val_loss:.6f}, val_acc: {val_accs}, time: {hours}h {minutes}m')
+        print(f'train_loss: {train_loss:.6f}, train_acc: {train_accs}')
+        print(f'val_loss: {val_loss:.6f}, val_acc: {val_accs}, time: {int(hours)}h {int(minutes)}m')
         print('-'*10)
         writer.flush()
     
