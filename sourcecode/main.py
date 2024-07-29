@@ -9,6 +9,7 @@ from torchvision import models
 from data_preprocessing import DL
 from multi_exit_ResNet import MultiExitResNet, createFolder, loadModel
 from train import train_val
+import sys
 
 ########################################
 #constants define
@@ -18,8 +19,10 @@ resize = 224
 lr=0.1
 momentum=0.9
 weight_decay=0.0001
+patience=10
 num_epochs=50
 path2weights='./models/weights.pt'
+load=False
 ########################################
 #data loader
 dl=DL(data_name='cifar100', batch_size=batch_size, path2data=path2data,resize=resize)
@@ -32,7 +35,7 @@ model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights
 # define the loss function and the optimizer
 loss_func = nn.CrossEntropyLoss(reduction='mean')
 opt = optim.SGD(model.parameters(), lr=lr, momentum=momentum,weight_decay=weight_decay)
-lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.1, patience=10)
+lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.1, patience=patience)
 
 # define the training parameters
 params_train = {'num_epochs':num_epochs,'optimizer':opt,'loss_func':loss_func,
@@ -42,7 +45,7 @@ params_train = {'num_epochs':num_epochs,'optimizer':opt,'loss_func':loss_func,
 
 # create the directory that stores weights.pt
 createFolder('./models')
-loadModel(model, params_train['path2weights'])
+loadModel(model, params_train['path2weights'],load=load)
 # train and validate the model
 #torch.autograd.set_detect_anomaly(True) #check NaN or infinite values appearing in the model
 model, loss_hist, metric_hist = train_val(model, params_train)
