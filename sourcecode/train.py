@@ -6,6 +6,7 @@ from torch.utils.tensorboard import SummaryWriter
 # utils
 import time
 from tqdm import tqdm
+from multi_exit_ResNet import createFolder
 
 # # 3. Training part
 # function to get current lr
@@ -79,10 +80,15 @@ def train_val(model, params):   #TODO 모델 불러오기
     train_dl=params["train_dl"]
     val_dl=params["val_dl"]
     lr_scheduler=params["lr_scheduler"]
-    path2weights=params["path2weights"]
+    load=params["load"]
+    loaded_loss=params["loaded_loss"]
     
-    best_loss = float('inf')
+    best_loss = float('inf') if not load else loaded_loss
     start_time = time.time()
+    
+    # path to save the model weights
+    current_time = time.strftime('%m_%d_%H%M%S', time.localtime())
+    path=createFolder('./models/'+current_time)
     
     #writer=None
     writer = SummaryWriter()
@@ -102,7 +108,7 @@ def train_val(model, params):   #TODO 모델 불러오기
         if val_loss < best_loss:
             best_loss = val_loss
             #best_model_wts = copy.deepcopy(model.state_dict())
-            torch.save(model.state_dict(), path2weights)
+            torch.save(model.state_dict(), path+'/best_model.pth')
             print('saved best model weights!')
             print('Get best val_loss')
 
@@ -115,6 +121,12 @@ def train_val(model, params):   #TODO 모델 불러오기
         print('-'*10)
         writer.flush()
     
+    torch.save({
+            'epoch': num_epochs,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': opt.state_dict(),
+            'loss': val_loss,
+            }, path+'/chckpoint.pth')
     writer.close()
     
     return model

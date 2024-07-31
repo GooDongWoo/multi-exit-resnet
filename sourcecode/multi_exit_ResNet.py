@@ -30,7 +30,7 @@ class BasicBlock(nn.Module):
     def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
         
-        # BatchNorm에 bias가 포함되어 있으므로, conv2d는 bias=False로 설정합니다.
+        # BatchNorm include bias, therefore, set conv2d as bias=False
         self.residual_function = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
@@ -125,10 +125,6 @@ class MultiExitResNet(nn.Module):
         '''
         super(MultiExitResNet, self).__init__()
 
-        # NOTE structure:
-        # init conv -> exit1
-        # self.backbone
-        # self.end_layer (avg pool, flatten, linear)
         self.num_classes=num_classes
         self.ptdmodel = ptdmodel
         self.exit_aft=exit_aft
@@ -149,7 +145,6 @@ class MultiExitResNet(nn.Module):
         self._build_exits()
 
     def _build_exits(self): #adding early exits/branches
-        # TODO generalise exit placement for multi exit
         # early exit 1
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         previous_shape=[] #len->5
@@ -169,10 +164,9 @@ class MultiExitResNet(nn.Module):
     @torch.jit.unused #decorator to skip jit comp
     def _forward_training(self, x):
         # TODO make jit compatible - not urgent
-        # NOTE broken because returning list()
+        # NOTE this could be broken because it return list, not tensor
         res = []
         y = self.init_conv(x)
-        #res.append(self.exits[0](y))
         # compute remaining backbone layers
         eidx=0
         for idx,module in enumerate(self.backbone):
@@ -180,7 +174,6 @@ class MultiExitResNet(nn.Module):
             if(eidx<self.exit_num-1 and idx+1==(self.exit_aft[eidx]//3)):
                 res.append(self.exits[eidx](y))
                 eidx+=1
-
         # final exit
         y = self.end_layers(y)
         res.append(y)
@@ -194,7 +187,7 @@ class MultiExitResNet(nn.Module):
             return top1 < self.exit_threshold
 
     def forward(self, x):
-        #std forward function
+        # NOTE path for inference
         if self.fast_inference_mode:
             y = self.init_conv(x)
             #res.append(self.exits[0](y))
@@ -210,9 +203,8 @@ class MultiExitResNet(nn.Module):
             # final exit
             res = self.end_layers(y)
             return res
-        
-        else: # NOTE used for training
-            # calculate all exits
+        else: 
+            # NOTE path for training
             return self._forward_training(x)
 
     def set_fast_inf_mode(self, mode=True):
