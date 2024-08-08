@@ -22,13 +22,13 @@ resize = 224                    # resize the image to 224x224
 
 # optimizer parameters
 opt_name='adam'                 # adam or sgd
-lr=0.1                          # learning rate
+lr=float(1e-3)                  # learning rate
 momentum=0.9                    # momentum
-weight_decay=float(1e-4)        # weight decay
+weight_decay=float(5e-4)        # weight decay
 
 # lr scheduler parameters
-weight_decay_ratio_factor=0.1   # weight decay factor
-patience=10                     # patience for lr_scheduler
+weight_decay_ratio_factor=0.8   # weight decay factor
+patience=5                     # patience for lr_scheduler
 
 # model parameters
 num_epochs=80                   # number of epochs
@@ -51,7 +51,7 @@ model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights
 # define the loss function and the optimizer
 loss_func = nn.CrossEntropyLoss(reduction='mean')
 optimizers={'sgd':optim.SGD(model.parameters(), lr=lr, momentum=momentum,weight_decay=weight_decay),
-            'adam':optim.Adam(model.parameters()),
+            'adam':optim.Adam(model.parameters(),lr=lr,weight_decay=weight_decay),
             }
 opt = optimizers[opt_name]
 lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=weight_decay_ratio_factor, patience=patience)

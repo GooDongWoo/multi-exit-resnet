@@ -10,6 +10,7 @@ def createFolder(directory):
     try:
         if not os.path.exists(directory):
             os.makedirs(directory)
+        return directory
     except OSError:
         print('Error')
 
