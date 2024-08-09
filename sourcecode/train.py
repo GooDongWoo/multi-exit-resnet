@@ -90,6 +90,11 @@ def train_val(model, params):   #TODO 모델 불러오기
     current_time = time.strftime('%m_%d_%H%M%S', time.localtime())
     path=createFolder('./models/'+current_time)
     
+    spec_txt=f'opt: {opt.__class__.__name__}\nlr: {opt.param_groups[0]["lr"]}\nbatch: {train_dl.batch_size}\nepoch: {num_epochs}'
+    with open(f"{path}/spec.txt", "w") as file:
+    # Write the text to the file
+        file.write(spec_txt)
+    
     #writer=None
     writer = SummaryWriter()
     writer.add_graph(model, torch.rand(1,3,224,224).to(next(model.parameters()).device))
