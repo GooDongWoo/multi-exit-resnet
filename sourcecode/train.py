@@ -80,26 +80,33 @@ def train_val(model, params):   #TODO 모델 불러오기
     train_dl=params["train_dl"]
     val_dl=params["val_dl"]
     lr_scheduler=params["lr_scheduler"]
-    load=params["load"]
+    isload=params["isload"]
     loaded_loss=params["loaded_loss"]
+    path_chckpnt=params["path_chckpnt"]
     
-    best_loss = float('inf') if not load else loaded_loss
+    best_loss = float('inf') if not isload else loaded_loss
     start_time = time.time()
     
     # path to save the model weights
-    current_time = time.strftime('%m_%d_%H%M%S', time.localtime())
+    current_time = time.strftime('%m%d_%H:%M:%S', time.localtime())
     path=createFolder('./models/'+current_time)
     
-    spec_txt=f'opt: {opt.__class__.__name__}\nlr: {opt.param_groups[0]["lr"]}\nbatch: {train_dl.batch_size}\nepoch: {num_epochs}'
+    spec_txt=f'opt: {opt.__class__.__name__}\nlr: {opt.param_groups[0]["lr"]}\nbatch: {train_dl.batch_size}\nepoch: {num_epochs}\n'
     with open(f"{path}/spec.txt", "w") as file:
-    # Write the text to the file
         file.write(spec_txt)
     
+    old_epoch=0
+    if(isload):
+        chckpnt = torch.load(path_chckpnt)
+        model.load_state_dict(chckpnt['model_state_dict'])
+        opt.load_state_dict(chckpnt['optimizer_state_dict'])
+        old_epoch = chckpnt['epoch']
+    
     #writer=None
-    writer = SummaryWriter()
+    writer = SummaryWriter('./runs/'+current_time,)
     writer.add_graph(model, torch.rand(1,3,224,224).to(next(model.parameters()).device))
     
-    for epoch in range(num_epochs):
+    for epoch in range(old_epoch,old_epoch+num_epochs):
         current_lr = get_lr(opt)
         print('Epoch {}/{}, current lr={}'.format(epoch, num_epochs-1, current_lr))
 
@@ -133,5 +140,8 @@ def train_val(model, params):   #TODO 모델 불러오기
             'loss': val_loss,
             }, path+'/chckpoint.pth')
     writer.close()
+    result_txt='total_time: {:.2f}m\nbest_val_loss: {:.6f}\nbest_val_acc: {}\n'.format(total_time, best_loss, val_accs)
+    with open(f"{path}/spec.txt", "a") as file:
+        file.write(result_txt)    
     
     return model

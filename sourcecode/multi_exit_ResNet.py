@@ -21,11 +21,6 @@ def get_output_shape(module, img_dim):
     module.to(device)
     dims = module(torch.rand(*(img_dim)).to(device)).data.shape
     return dims
-
-def loadModel(model=None, path=None, load=False):
-    #load model from checkpoint
-    if (load and path):
-        model.load_state_dict(torch.load(path))
 class BasicBlock(nn.Module):
     expansion = 1
     def __init__(self, in_channels, out_channels, stride=1):

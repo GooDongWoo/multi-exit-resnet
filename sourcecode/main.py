@@ -32,9 +32,8 @@ patience=5                     # patience for lr_scheduler
 
 # model parameters
 num_epochs=80                   # number of epochs
-path2weights='./models/weights.pt'      # path to weights file
-load=False                      # load customized pretrained weights or not
-loaded_loss=float('inf')                 # loaded loss value
+path_chckpnt='./models/~~/chckpoint.pth'      # path to weights file
+isload=False                      # load customized pretrained weights or not
 ########################################
 
 
@@ -61,11 +60,8 @@ lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=weight_decay_ratio_fact
 params_train = {'num_epochs':num_epochs,'optimizer':opt,'loss_func':loss_func,
     'train_dl':dl.train_dl,'val_dl':dl.val_dl,
     'sanity_check':False,'lr_scheduler':lr_scheduler,
-    'load':load, 'loaded_loss':loaded_loss}
+    'isload':isload, "path_chckpnt":path_chckpnt}
 
-
-# create the directory that stores weights.pt
-#loadModel(model, path2weights, load=load) #TODO load model
 
 # train and validate the model
 #torch.autograd.set_detect_anomaly(True) #check NaN or infinite values appearing in the model
