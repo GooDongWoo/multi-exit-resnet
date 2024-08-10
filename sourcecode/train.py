@@ -5,8 +5,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 # utils
 import time
+import os
 from tqdm import tqdm
-from multi_exit_ResNet import createFolder
 
 # # 3. Training part
 # function to get current lr
@@ -81,26 +81,27 @@ def train_val(model, params):   #TODO 모델 불러오기
     val_dl=params["val_dl"]
     lr_scheduler=params["lr_scheduler"]
     isload=params["isload"]
-    loaded_loss=params["loaded_loss"]
     path_chckpnt=params["path_chckpnt"]
     
-    best_loss = float('inf') if not isload else loaded_loss
     start_time = time.time()
     
     # path to save the model weights
-    current_time = time.strftime('%m%d_%H:%M:%S', time.localtime())
-    path=createFolder('./models/'+current_time)
+    current_time = time.strftime('%m%d_%H%M%S', time.localtime())
+    path=f'./models/{current_time}'
+    os.makedirs(path, exist_ok=True)
     
-    spec_txt=f'opt: {opt.__class__.__name__}\nlr: {opt.param_groups[0]["lr"]}\nbatch: {train_dl.batch_size}\nepoch: {num_epochs}\n'
+    spec_txt=f'opt: {opt.__class__.__name__}\nlr: {opt.param_groups[0]["lr"]}\nbatch: {train_dl.batch_size}\nepoch: {num_epochs}\nisload: {isload}\npath_chckpnt: {path_chckpnt}\n'
     with open(f"{path}/spec.txt", "w") as file:
         file.write(spec_txt)
     
+    best_loss = float('inf')
     old_epoch=0
     if(isload):
         chckpnt = torch.load(path_chckpnt)
         model.load_state_dict(chckpnt['model_state_dict'])
         opt.load_state_dict(chckpnt['optimizer_state_dict'])
         old_epoch = chckpnt['epoch']
+        best_loss = chckpnt['loss']
     
     #writer=None
     writer = SummaryWriter('./runs/'+current_time,)
@@ -140,7 +141,8 @@ def train_val(model, params):   #TODO 모델 불러오기
             'loss': val_loss,
             }, path+'/chckpoint.pth')
     writer.close()
-    result_txt='total_time: {:.2f}m\nbest_val_loss: {:.6f}\nbest_val_acc: {}\n'.format(total_time, best_loss, val_accs)
+    linedivisor='#'*10+'\n'
+    result_txt=linedivisor+f'last_val_acc: {val_accs}\nlast_train_acc: {train_accs}\nlast_val_loss: {best_loss:.6f}\ntotal_time: {total_time:.2f}m\n'
     with open(f"{path}/spec.txt", "a") as file:
         file.write(result_txt)    
     

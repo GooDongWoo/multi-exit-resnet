@@ -9,7 +9,7 @@ from torchvision import models
 from torchinfo import summary
 
 from data_preprocessing import DL
-from multi_exit_ResNet import MultiExitResNet, createFolder, loadModel
+from multi_exit_ResNet import MultiExitResNet
 from train import train_val
 
 ########################################
@@ -32,8 +32,8 @@ patience=5                     # patience for lr_scheduler
 
 # model parameters
 num_epochs=80                   # number of epochs
-path_chckpnt='./models/~~/chckpoint.pth'      # path to weights file
-isload=False                      # load customized pretrained weights or not
+path_chckpnt='./models/08_05_200822/chckpoint.pth'      # path to weights file
+isload=True                      # load customized pretrained weights or not
 ########################################
 
 
@@ -57,9 +57,9 @@ lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=weight_decay_ratio_fact
 
 
 # define the training parameters
-params_train = {'num_epochs':num_epochs,'optimizer':opt,'loss_func':loss_func,
+params_train = {'num_epochs':num_epochs,'loss_func':loss_func,'optimizer':opt,
     'train_dl':dl.train_dl,'val_dl':dl.val_dl,
-    'sanity_check':False,'lr_scheduler':lr_scheduler,
+    'lr_scheduler':lr_scheduler,
     'isload':isload, "path_chckpnt":path_chckpnt}
 
 

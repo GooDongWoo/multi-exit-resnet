@@ -2,17 +2,8 @@
 # model
 import torch
 import torch.nn as nn
-import os
 # dataset and transformation
 from torchvision import models
-
-def createFolder(directory):
-    try:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        return directory
-    except OSError:
-        print('Error')
 
 # # 2. Model Configuration
 def get_output_shape(module, img_dim):
