@@ -211,6 +211,7 @@ class OneExitResNet(nn.Module):
 
         self.num_classes=num_classes
         self.ptdmodel = ptdmodel
+        self.exit_num=1
         self.exits = nn.ModuleList()
         # weighting for each exit when summing loss
 
@@ -231,7 +232,7 @@ class OneExitResNet(nn.Module):
         for module in (self.backbone):
             y = module(y)
         # final exit
-        return self.end_layers(y)
+        return [self.end_layers(y)]
 
 if(__name__=='__main__'):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
