@@ -199,6 +199,40 @@ class MultiExitResNet(nn.Module):
             self.eval()
         self.fast_inference_mode = mode
 
+class OneExitResNet(nn.Module):
+    '''
+    for normal train last exit
+    '''
+    def __init__(self, num_classes=100,ptdmodel=None):
+        '''
+        data_shape: batch size must be 1. ex) [1,3,32,32]
+        '''
+        super(MultiExitResNet, self).__init__()
+
+        self.num_classes=num_classes
+        self.ptdmodel = ptdmodel
+        self.exits = nn.ModuleList()
+        # weighting for each exit when summing loss
+
+        self.init_conv = nn.Sequential(self.ptdmodel.conv1, self.ptdmodel.bn1, self.ptdmodel.relu, self.ptdmodel.maxpool)
+        self.backbone=nn.ModuleList()
+        for layer in [self.ptdmodel.layer1,self.ptdmodel.layer2,self.ptdmodel.layer3,self.ptdmodel.layer4]:
+            for block in layer:
+                self.backbone.append(block)
+        self.end_layers=nn.Sequential(self.ptdmodel.avgpool, nn.Flatten(), nn.Linear(in_features=self.ptdmodel.fc.in_features, out_features=num_classes))
+        self._build_exits()
+
+    def _build_exits(self): #adding early exits/branches
+        self.exits.append(self.end_layers)
+
+    def forward(self, x):
+        y = self.init_conv(x)
+        # compute remaining backbone layers
+        for module in (self.backbone):
+            y = module(y)
+        # final exit
+        return self.end_layers(y)
+
 if(__name__=='__main__'):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights.DEFAULT).to(device)).to(device)
