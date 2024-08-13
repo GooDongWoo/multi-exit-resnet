@@ -97,7 +97,7 @@ def train_val(model, params):   #TODO 모델 불러오기
     best_loss = float('inf')
     old_epoch=0
     if(isload):
-        chckpnt = torch.load(path_chckpnt)
+        chckpnt = torch.load(path_chckpnt,weights_only=True)
         model.load_state_dict(chckpnt['model_state_dict'])
         opt.load_state_dict(chckpnt['optimizer_state_dict'])
         old_epoch = chckpnt['epoch']
@@ -109,7 +109,7 @@ def train_val(model, params):   #TODO 모델 불러오기
     
     for epoch in range(old_epoch,old_epoch+num_epochs):
         current_lr = get_lr(opt)
-        print('Epoch {}/{}, current lr={}'.format(epoch, num_epochs-1, current_lr))
+        print('Epoch {}/{}, current lr={}'.format(epoch, old_epoch+num_epochs-1, current_lr))
 
         model.train()
         train_loss, train_accs = loss_epoch(model, loss_func, train_dl, writer, epoch, opt)
