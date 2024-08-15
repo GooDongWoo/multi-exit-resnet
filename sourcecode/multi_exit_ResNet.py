@@ -12,6 +12,7 @@ def get_output_shape(module, img_dim):
     module.to(device)
     dims = module(torch.rand(*(img_dim)).to(device)).data.shape
     return dims
+
 class BasicBlock(nn.Module):
     expansion = 1
     def __init__(self, in_channels, out_channels, stride=1):
@@ -105,11 +106,8 @@ class MultiExitResNet(nn.Module):
     SGD optimizer with a learning rate of 0.1,a momentum of 0.9, and a weight decay of 10^-4. 
     The learning rate is decayed at epochs 81, 110, and 140 on a scale of 0.1.
     '''
-    def __init__(self, num_classes=100, data_shape=[1,3,224,224],
+    def __init__(self, num_classes=100, data_shape=[3,3,224,224],
                  ptdmodel=None, exit_aft=[18, 36, 54, 72, 90]):
-        '''
-        data_shape: batch size must be 1. ex) [1,3,32,32]
-        '''
         super(MultiExitResNet, self).__init__()
 
         self.num_classes=num_classes
@@ -134,19 +132,22 @@ class MultiExitResNet(nn.Module):
     def _build_exits(self): #adding early exits/branches
         # early exit 1
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        previous_shape=[] #len->5
-        tmp = self.init_conv(torch.rand(*(self.input_shape)).to(device))
-        eidx=0
-        for idx,module in enumerate(self.backbone):
-            tmp = module(tmp)
-            if(eidx<self.exit_num-1 and idx+1==(self.exit_aft[eidx]//3)):
-                previous_shape.append(tmp.data.shape)
-                eidx+=1
-        for i in range(self.exit_num-1):
-            ee = IntrClassif(previous_shape[i], self.num_classes)   #TODO 
-            self.exits.append(ee)
-        #final exit
-        self.exits.append(self.end_layers)
+        with torch.no_grad():
+            previous_shape=[] #len->5
+            self.init_conv.eval()
+            tmp = self.init_conv(torch.rand(*(self.input_shape)).to(device))
+            eidx=0
+            for idx,module in enumerate(self.backbone):
+                module.eval()
+                tmp = module(tmp)
+                if(eidx<self.exit_num-1 and idx+1==(self.exit_aft[eidx]//3)):
+                    previous_shape.append(tmp.data.shape)
+                    eidx+=1
+            for i in range(self.exit_num-1):
+                ee = IntrClassif(previous_shape[i], self.num_classes)   #TODO 
+                self.exits.append(ee)
+            #final exit
+            self.exits.append(self.end_layers)
 
     @torch.jit.unused #decorator to skip jit comp
     def _forward_training(self, x):
@@ -204,9 +205,6 @@ class OneExitResNet(nn.Module):
     for normal train last exit
     '''
     def __init__(self, num_classes=100,ptdmodel=None):
-        '''
-        data_shape: batch size must be 1. ex) [1,3,32,32]
-        '''
         super(MultiExitResNet, self).__init__()
 
         self.num_classes=num_classes

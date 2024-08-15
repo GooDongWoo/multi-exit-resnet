@@ -82,6 +82,7 @@ def train_val(model, params):   #TODO 모델 불러오기
     lr_scheduler=params["lr_scheduler"]
     isload=params["isload"]
     path_chckpnt=params["path_chckpnt"]
+    resize=params["resize"]
     
     start_time = time.time()
     
@@ -105,7 +106,7 @@ def train_val(model, params):   #TODO 모델 불러오기
     
     #writer=None
     writer = SummaryWriter('./runs/'+current_time,)
-    writer.add_graph(model, torch.rand(1,3,224,224).to(next(model.parameters()).device))
+    writer.add_graph(model, torch.rand(1,3,resize,resize).to(next(model.parameters()).device))
     
     for epoch in range(old_epoch,old_epoch+num_epochs):
         current_lr = get_lr(opt)

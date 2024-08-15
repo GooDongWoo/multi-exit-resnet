@@ -24,15 +24,15 @@ resize = 224                    # resize the image to 224x224
 opt_name='adam'                 # adam or sgd
 lr=float(1e-3)                  # learning rate
 momentum=0.9                    # momentum
-weight_decay=float(5e-4)        # weight decay
+weight_decay=float(1e-4)        # weight decay
 
 # lr scheduler parameters
-weight_decay_ratio_factor=0.8   # weight decay factor
+weight_decay_ratio_factor=0.5   # weight decay factor
 patience=5                     # patience for lr_scheduler
 
 # model parameters
 num_epochs=80                   # number of epochs
-path_chckpnt='./models/08_05_200822/chckpoint.pth'      # path to weights file
+path_chckpnt='./models/0815_013538/chckpoint.pth'      # path to weights file
 isload=True                      # load customized pretrained weights or not
 ########################################
 
@@ -43,7 +43,7 @@ dl=DL(data_name=data_name, batch_size=batch_size, path2data=path2data,resize=res
 
 # model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights.DEFAULT).to(device)).to(device)
+model=MultiExitResNet(ptdmodel=models.resnet101(weights=models.ResNet101_Weights.DEFAULT).to(device),data_shape=[1,3,resize,resize]).to(device)
 #summary(m1, (1,3, 224, 224), device=device.type)
 
 
@@ -60,7 +60,8 @@ lr_scheduler = ReduceLROnPlateau(opt, mode='min', factor=weight_decay_ratio_fact
 params_train = {'num_epochs':num_epochs,'loss_func':loss_func,'optimizer':opt,
     'train_dl':dl.train_dl,'val_dl':dl.val_dl,
     'lr_scheduler':lr_scheduler,
-    'isload':isload, "path_chckpnt":path_chckpnt}
+    'isload':isload, "path_chckpnt":path_chckpnt,
+    'resize':resize}
 
 
 # train and validate the model
