@@ -21,8 +21,8 @@ def metric_batch(output, label):
     return corrects
 
 # function to calculate loss per mini-batch
-def loss_batch(loss_func, output_list, label, opt=None):
-    losses = [loss_func(output,label)/len(output_list) for output in output_list]   # raw losses -> 굳이 각각 exit의 길이로 나눠줘야하나? 로스 크기만 달라지지 않나;;
+def loss_batch(loss_func, output_list, label, elws, opt=None):
+    losses = [loss_func(output,label)*elw for output,elw in zip(output_list,elws)]   # raw losses -> 굳이 각각 exit의 길이로 나눠줘야하나? 로스 크기만 달라지지 않나;;
     acc_s = [metric_batch(output, label) for output in output_list]
     
     if opt is not None:
@@ -50,8 +50,9 @@ def loss_epoch(model, loss_func, dataset_dl, writer, epoch, opt=None):
         xb = xb.to(device)
         yb = yb.to(device)
         output_list = model(xb)
+        elws=model.getELW()
 
-        losses, acc_s = loss_batch(loss_func, output_list, yb, opt)
+        losses, acc_s = loss_batch(loss_func, output_list, yb, elws, opt)
 
         running_loss = [sum(i) for i in zip(running_loss,losses)]
         running_metric = [sum(i) for i in zip(running_metric,acc_s)]

@@ -2,14 +2,10 @@ import time
 import random
 import os
 import threading
-import plotly.express as px
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 import pandas as pd
-from plotly.offline import plot
-from plotly.subplots import make_subplots
 ####################################################################################################################################
 def increaseY():
     global Y_t,fps_

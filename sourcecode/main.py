@@ -18,7 +18,7 @@ from train import train_val
 data_name='cifar100'
 batch_size = 32                 # batch size
 path2data = './data'            # path to the data
-resize = 224                    # resize the image to 224x224
+resize = 32                    # resize the image to 224x224
 
 # optimizer parameters
 opt_name='adam'                 # adam or sgd
@@ -31,9 +31,10 @@ weight_decay_ratio_factor=0.5   # weight decay factor
 patience=5                     # patience for lr_scheduler
 
 # model parameters
+exits_loss_weights=[1,1,1,1,1,6]    # loss weights for each exit 6
 num_epochs=80                   # number of epochs
 path_chckpnt='./models/0815_013538/chckpoint.pth'      # path to weights file
-isload=True                      # load customized pretrained weights or not
+isload=False                      # load customized pretrained weights or not
 ########################################
 
 

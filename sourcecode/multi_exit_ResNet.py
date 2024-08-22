@@ -107,7 +107,7 @@ class MultiExitResNet(nn.Module):
     The learning rate is decayed at epochs 81, 110, and 140 on a scale of 0.1.
     '''
     def __init__(self, num_classes=100, data_shape=[3,3,224,224],
-                 ptdmodel=None, exit_aft=[18, 36, 54, 72, 90]):
+                 ptdmodel=None, exit_aft=[18, 36, 54, 72, 90],exit_loss_weights=[1,1,1,1,1,1]):
         super(MultiExitResNet, self).__init__()
 
         self.num_classes=num_classes
@@ -119,7 +119,7 @@ class MultiExitResNet(nn.Module):
 
         self.exit_num=len(exit_aft)+1
         self.fast_inference_mode = False
-        self.exit_loss_weights = [1/self.exit_num for _ in range(self.exit_num)] #for training need to match total exits_num
+        self.exit_loss_weights = [elw/sum(exit_loss_weights) for elw in exit_loss_weights] #for training need to match total exits_num
         self.exit_threshold = torch.tensor([0.8], dtype=torch.float32) #for fast inference  #TODO: inference variable(not constant 0.8) need to make parameter
         self.init_conv = nn.Sequential(self.ptdmodel.conv1, self.ptdmodel.bn1, self.ptdmodel.relu, self.ptdmodel.maxpool)
         self.backbone=nn.ModuleList()
@@ -173,6 +173,11 @@ class MultiExitResNet(nn.Module):
             #top1 = torch.max(pk)          #originally x*log(x)#TODO np.sum(pk*log(pk))
             top1 = torch.log(pk)*pk
             return top1 < self.exit_threshold
+    
+    def getELW(self):
+        if(self.exit_loss_weights is None):
+            self.exit_loss_weights = [1]*self.exit_num
+        return self.exit_loss_weights
 
     def forward(self, x):
         # NOTE path for inference
