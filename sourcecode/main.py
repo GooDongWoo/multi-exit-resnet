@@ -18,7 +18,7 @@ from train import train_val
 data_name='cifar100'
 batch_size = 32                 # batch size
 path2data = './data'            # path to the data
-resize = 32                    # resize the image to 224x224
+resize = 224                    # resize the image to 224x224
 
 # optimizer parameters
 opt_name='adam'                 # adam or sgd

@@ -92,7 +92,7 @@ def train_val(model, params):   #TODO 모델 불러오기
     path=f'./models/{current_time}'
     os.makedirs(path, exist_ok=True)
     
-    spec_txt=f'opt: {opt.__class__.__name__}\nlr: {opt.param_groups[0]["lr"]}\nbatch: {train_dl.batch_size}\nepoch: {num_epochs}\nisload: {isload}\npath_chckpnt: {path_chckpnt}\n'
+    spec_txt=f'opt: {opt.__class__.__name__}\nlr: {opt.param_groups[0]["lr"]}\nbatch: {train_dl.batch_size}\nepoch: {num_epochs}\nisload: {isload}\npath_chckpnt: {path_chckpnt}\nexits_loss_weights: {model.getELW()}\n'
     with open(f"{path}/spec.txt", "w") as file:
         file.write(spec_txt)
     
